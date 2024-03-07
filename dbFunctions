@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+
+namespace Genuine_ERP
+{
+    class dbfunctinos
+    {
+        public static string i;
+        public static string connectionstring = System.Configuration.ConfigurationSettings.AppSettings["ConStr"];
+        public static DataTable getTable(string sqlQuery)
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+                SqlConnection con = new SqlConnection(connectionstring);
+                con.Open();
+                SqlCommand cmd = new SqlCommand(sqlQuery, con);
+                cmd.ExecuteNonQuery();
+                SqlDataAdapter sqlDA = new SqlDataAdapter(cmd);
+                sqlDA.Fill(dt);
+                con.Close();
+            }
+            catch (Exception ex)
+            {
+                
+            }
+
+            return dt;
+        }
+        public static DataTable GetFieldValue(string sqlQuery)
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+
+                SqlConnection con = new SqlConnection(connectionstring);
+                SqlCommand cmd = new SqlCommand(sqlQuery, con);
+                SqlDataAdapter sqlDA = new SqlDataAdapter(cmd);
+                sqlDA.Fill(dt);
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                //Logs(ex.ToString(), dbFunctions.username);
+            }
+
+            return dt;
+        }
+        public static string AutoNumber(string sqlQuery)
+        {
+            DataTable dt = new DataTable();
+            
+            try
+            {
+
+                SqlConnection con = new SqlConnection(connectionstring);
+                SqlCommand cmd = new SqlCommand(sqlQuery, con);
+                SqlDataAdapter sqlDA = new SqlDataAdapter(cmd);
+                sqlDA.Fill(dt);
+                i=dt.Rows[0][0].ToString();
+
+            }
+            catch (Exception ex)
+            {
+               MessageBox.Show(ex.Message);
+                //Logs(ex.ToString(), dbFunctions.username);
+            }
+            return i;
+        }
+
+        public static string GetdIdValue(string sqlQuery)
+        {
+            string LFieldValue = "";
+            DataTable dt = new DataTable();
+            try
+            {
+
+                SqlConnection con = new SqlConnection(connectionstring);
+                SqlCommand cmd = new SqlCommand(sqlQuery, con);
+                SqlDataAdapter sqlDA = new SqlDataAdapter(cmd);
+                sqlDA.Fill(dt);
+                if (dt.Rows.Count > 0)
+                {
+                    LFieldValue = dt.Rows[0][0].ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                //Logs(ex.ToString(), dbFunctions.username);
+            }
+
+            return LFieldValue;
+        }
+        public static DataGridViewButtonColumn Button(string headerTextT, string name, string text)
+        {
+            DataGridViewButtonColumn dgbv = new DataGridViewButtonColumn();
+            dgbv.HeaderText = headerTextT;
+            dgbv.Name =name;
+            dgbv.Text = text;
+            dgbv.UseColumnTextForButtonValue = true;
+            
+            return dgbv;
+        }
+        
+    }
+}
