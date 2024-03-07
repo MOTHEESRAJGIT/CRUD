@@ -1,0 +1,190 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Genuine_ERP;
+
+namespace Task
+{
+public partial class Form1 : Form
+{
+    private string hT;
+    public bool b;
+
+    public Form1()
+    {
+        InitializeComponent();
+    }
+
+    public void InsertRec()
+    {
+        try
+        {
+            DataTable dt = dbfunctinos.getTable("Insert into TaskTable values ('" + Convert.ToInt32(Cus_textBox_ID.Text) + "','" +
+                Cus_textBox_Name.Text + "','" + Cus_textBox_Gender.Text + "','" + Cus_textBox_Mob_No.Text + "')");
+            MessageBox.Show("Record was Successfully ->Inserted");
+                
+        }
+        catch(Exception)
+        {
+
+        }
+    }
+    public void UpdateRec()
+    {
+        try
+        {
+            DataTable dt = dbfunctinos.getTable("Update TaskTable Set  CID=  '" + Convert.ToInt32(Cus_textBox_ID.Text) + "',Cus_Name='" +
+                Cus_textBox_Name.Text + "',Cus_Gender='" + Cus_textBox_Gender.Text + "',Cus_Mobile_No='" + Cus_textBox_Mob_No.Text + "' Where CID='"+ Convert.ToInt32(Cus_textBox_ID.Text) + "'");
+            MessageBox.Show("Record was Successfully ->Updated");
+
+        }
+        catch (Exception)
+        {
+
+        }
+    }
+    public void cusData()
+    {
+        DataTable s=dbfunctinos.GetFieldValue("Select * from TaskTable");
+        dataGridView1.DataSource = s;
+    }
+
+    private void Button1_Click(object sender, EventArgs e)
+    {
+        if (Cus_textBox_Mob_No.TextLength == 10)
+        {
+
+
+            if (string.IsNullOrEmpty(Cus_textBox_Name.Text.Trim()))
+            {
+                errorProvider1.SetError(Cus_textBox_Name, "Customer Name is Required");
+
+            }
+            else
+            {
+
+                if (dataGridView1.Rows[Convert.ToInt32(Cus_textBox_ID.Text) - 1].Cells["CID"].FormattedValue.ToString().Equals(Cus_textBox_ID.Text))
+                {
+                    Console.WriteLine(dataGridView1.Rows.Count);
+                    Console.WriteLine(Cus_textBox_ID.Text);
+                    Console.WriteLine(dataGridView1.Rows[Convert.ToInt32(Cus_textBox_ID.Text)].Cells["CID"].FormattedValue.ToString() + "  Hi from For Loop");
+                    UpdateRec();
+                    cusData();
+
+                }
+                else
+                {
+
+                    Console.WriteLine(Cus_textBox_ID.Text);
+                    Console.WriteLine("Hi from Else");
+                    errorProvider1.SetError(Cus_textBox_Name, string.Empty);
+                    InsertRec();
+                    cusData();
+
+                }
+                CusId();
+
+                Cus_textBox_Name.Text = "";
+                //Cus_textBox_ID.Text;
+                Cus_textBox_Mob_No.Text = "";
+                Cus_textBox_Gender.Text = "";
+            }
+        }
+        else
+        {
+            MessageBox.Show("Error, Phone number is can't contain Length=10  ");
+        }
+    }
+    public void CusId()
+    {
+        try
+        {
+            string dt = dbfunctinos.AutoNumber("Select isnull(max(cast(CID as int)),0)+1 from TaskTable");
+            Cus_textBox_ID.Text = dt;
+        }
+        catch(Exception e)
+        {
+
+        }
+    }
+    public void Cus_Btn()
+    {
+        DataGridViewButtonColumn dgbv = dbfunctinos.Button("Button", "Button", "Edit");
+        dataGridView1.Columns.Add(dgbv);
+    }
+
+    private void Form1_Load(object sender, EventArgs e)
+    {
+        this.ActiveControl = Cus_textBox_Name;
+        // Cus_Btn();
+        InsertRec();
+        cusData();
+        CusId();
+          
+    }
+
+    private void Cus_textBox_ID_TextChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void dataGridView_Content_Click(object sender, DataGridViewCellEventArgs e)
+    {
+            
+            if (dataGridView1.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Edit")
+            {
+                Cus_textBox_ID.Text = dataGridView1.Rows[e.RowIndex].Cells["CID"].FormattedValue.ToString();
+                Cus_textBox_Name.Text = dataGridView1.Rows[e.RowIndex].Cells["Cus_Name"].FormattedValue.ToString();
+                Cus_textBox_Gender.Text = dataGridView1.Rows[e.RowIndex].Cells["Cus_Gender"].FormattedValue.ToString();
+                Cus_textBox_Mob_No.Text = dataGridView1.Rows[e.RowIndex].Cells["Cus_Mob_No"].FormattedValue.ToString();
+
+            }
+            if (dataGridView1.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Delete")
+            {
+
+                DataTable dt = dbfunctinos.getTable("Delete TaskTable Where CID='" + (Convert.ToInt32(Cus_textBox_ID.Text) - 1) + "'");
+                Console.WriteLine(Convert.ToInt32(Cus_textBox_ID.Text) - 1);
+                MessageBox.Show("Record was Successfully -> Deleted");
+                dataGridView1.DataSource = dt;
+                cusData();
+
+            }
+            
+
+
+    }
+
+    private void Form1_KeyPress(object sender, KeyPressEventArgs e)
+    {
+
+    }
+
+    private void Cus_textBox_Mob_No_KeyPress(object sender, KeyPressEventArgs e)
+    {
+        if(!char.IsDigit(e.KeyChar)&& !char.IsControl(e.KeyChar))
+        {
+            e.Handled = true;
+            MessageBox.Show("Error, Phone number is can't contain letters");
+        }
+    }
+
+    private void Cus_textBox_Mob_No_TextChanged(object sender, EventArgs e)
+    {
+        if (Cus_textBox_Mob_No.TextLength == 10)
+        {
+            Cus_textBox_Mob_No.ForeColor = Color.Black;
+        }
+        else
+        {
+            Cus_textBox_Mob_No.ForeColor = Color.Red;
+        }
+    }
+}
+}
