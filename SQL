@@ -1,0 +1,113 @@
+select * from Product_Master
+ 
+
+select * from selection_table
+
+SP_HELPTEXT Pr_fetch_purchase_prodwise
+
+
+alter proc Pr_fetch_Purchase_Weight --Pr_fetch_Purchase_Weight '20240401','20240423','1'
+@fdate varchar(50),                                    
+@tdate varchar(50),
+@branch int
+as
+begin
+select Pur_billno as BillNo,cus_name as Supplier,pm_name as Product, isnull(sum(pur_qty),0) as Qty,pm_empcom as Weight,cast(isnull(sum(pur_qty),0)*pm_empcom as decimal(18,3)) as TotWeight,cast((isnull(sum(pur_qty),0)*pm_empcom)/1000 as decimal(18,3)) as NetTon
+from Purchase
+left outer join Product_Master on Pm_id=Pur_prodid 
+left outer join Customer_Master on Cus_ID=pur_suppid 
+left outer join Branch_Master on branch_id=Pur_branch  
+where (case when @branch=0 then @branch else Pur_branch end)=@branch and convert(varchar,Pur_date,112)>=@fdate and convert(varchar,Pur_date,112)<=@tdate
+group by Pur_billno,cus_name,pur_qty,pm_empcom,pm_name
+end
+
+alter proc Pr_fetch_Sales_Weight --Pr_fetch_Sales_Weight '20230204','20240423','1'
+@fdate varchar(50),                                     
+@tdate varchar(50),
+@branch int
+as
+begin
+Select Sal_Billno as BillNo,cus_name as customer,pm_name as Product ,isnull(sum(Sal_qty),0) as Qty,pm_empcom as Weight,cast(isnull(sum(Sal_qty),0)*pm_empcom as decimal(18,3)) as TotWeight,cast((isnull(sum(Sal_qty),0)*pm_empcom)/1000 as decimal(18,3)) as NetTon
+from Sales
+left outer join Product_Master on Pm_id=Sal_prodid 
+left outer join Customer_Master on Cus_ID=Sal_cusid 
+left outer join Branch_Master on branch_id=Sal_Branch
+where (case when @branch=0 then @branch else Sal_Branch end)=@branch and convert(varchar,Sal_date,112)>=@fdate and convert(varchar,Sal_date,112)<=@tdate
+group by Sal_Billno,cus_name,Sal_qty,pm_empcom,pm_name
+end
+
+
+
+
+Alter proc [dbo].[Pr_fetch_Purchase_prodwise]                                    
+@fdate varchar(50),                                    
+@tdate varchar(50),                                    
+@branch varchar(max),                              
+@type varchar(50),                                
+@product varchar(max),                  
+@status char(1)                  
+as                                        
+begin                            
+set @branch=(case when @branch='ALL' then '' else @branch end)    
+select Brand,ProductName,HSNCode,sum([Qty]) as [Qty],Weights,[Basic Rate],sum(Total) as Total,sum(DIs) as Dis,sum(Amount) as Amount,sum(CGST) as CGST,                  
+sum(SGST) as SGST,sum(IGST) as IGST,sum(CessAmount) as CessAmount,sum(Freight) as Freight,sum(ODisc) as ODisc,                              
+sum([Net]) as [Net] from(                                      
+select Pur_billno as BillNo,                      
+pm_brand as Brand,pm_name as ProductName,pm_hsncode as HSNCode,pm_EmpCom as Weights,                  
+--isnull(cus_name,cus_name) as Customer,convert(varchar,Pur_date,104) as Date,                   
+sum(Pur_qty) as [Qty],  
+convert(decimal(18,2),Pur_Rate) as [Basic Rate],                                    
+convert(decimal(18,2),sum((Pur_qty * Pur_rate))) as Total,                                
+convert(decimal(18,2),sum((((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)+Pur_discamt)) as [Dis],                                            
+--convert(decimal(18,2),sum((((Pur_qty * Pur_rate)) - (((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)-          
+--(Pur_DiscAmt+Pur_ODiscAmt+isnull(pur_freight,0)))*((100-(Pur_TDiscper+Pur_PDiscper))/100))) as Amount,                                            
+--'CGST'=sum(case when cus_scode!=branch_statecode then 0 else           
+--convert(decimal(18,2),((((((Pur_qty * Pur_rate)) - (((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)-          
+--(Pur_DiscAmt+Pur_ODiscAmt+isnull(pur_freight,0)))*((100-(Pur_TDiscper+Pur_PDiscper))/100)) *Pur_gst /100)/2))  end),                 
+--           
+--                 
+--                                    
+--'SGST'=sum(case when cus_scode!=branch_statecode then 0 else           
+--convert(decimal(18,2),((((((Pur_qty * Pur_rate)) - (((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)-          
+--(Pur_DiscAmt+Pur_ODiscAmt+isnull(pur_freight,0)))*((100-(Pur_TDiscper+Pur_PDiscper))/100)) *Pur_gst /100))/2)  end),                 
+--            
+--                  
+--                    
+--'IGST'=sum(case when cus_scode!=branch_statecode then           
+--convert(decimal(18,2),((((((Pur_qty * Pur_rate)) - (((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)-          
+--(Pur_DiscAmt+Pur_ODiscAmt+isnull(pur_freight,0)))*((100-(Pur_TDiscper+Pur_PDiscper))/100)) *Pur_gst /100))) else 0  end),                   
+--            
+--                  
+--                    
+--convert(decimal(18,2),sum((((((Pur_qty * Pur_rate)) - (((Pur_qty * Pur_rate)) * (Pur_DiscPer+Pur_oDiscPer) / 100)-          
+--(Pur_DiscAmt+Pur_ODiscAmt+isnull(pur_freight,0)))*((100-(Pur_TDiscper+Pur_PDiscper))/100)) *Pur_cess /100))) as CessAmount,                                    
+--isnull(sum(pur_ofreight),0) as Freight,                                          
+--isnull(sum(Pur_TDisc),0) as ODisc,                                  
+--isnull(sum((Pur_discamt+(Pur_discamt*(Pur_cess+Pur_gst)/100))),0) as DiscAmt,                                  
+--convert(decimal(18,2),round(SUM((((pur_qty * pur_rate) - ((pur_qty * pur_rate) * (Pur_oDiscPer+Pur_Discper) / 100)-            
+--isnull((Pur_oDiscAmt+Pur_DiscAmt),0)-isnull(pur_freight,0))*((100-(Pur_TDiscper+Pur_PDiscper))/100))*((100+pur_Gst+pur_cess)/100)                        
+--+isnull((pur_ofreight),0)-isnull((Pur_TDisc),0)),0)) as [Net],
+CONVERT(DEcimal(18,2),(sum(Pur_Taxable))) as Amount,                                
+'CGST'=SUM(case when Cus_scode!=branch_statecode then 0 else CONVERT(DEcimal(18,2),((Pur_Taxable*pur_Gst)/100)/2) end),                                
+'SGST'=SUM(case when Cus_scode!=branch_statecode then 0 else CONVERT(DEcimal(18,2),((Pur_Taxable*pur_Gst)/100)/2)  end),             
+'IGST'=SUM(case when Cus_scode!=branch_statecode then CONVERT(DEcimal(18,2),(Pur_Taxable*pur_Gst)/100) else 0  end),             
+CONVERT(DEcimal(18,2),sum(Pur_Taxable*pur_cess)/100) as CessAmount,                          
+convert(decimal(18,2),isnull(SUM(pur_freight),0)) as Freight,                            
+convert(decimal(18,2),isnull(SUM(Pur_TDisc),0)) as ODisc,                        
+convert(decimal(18,2),round(isnull(SUM(Pur_Total),0),0)) as Net,                                         
+
+convert(varchar,Pur_date,112) as odate                      
+FROM Purchase                                        
+LEFT outer join customer_Master on cus_id=Pur_Suppid --and Sup_branch=Pur_branch                                        
+left outer join Product_Master on --pm_Branch=Pur_branch and                         
+Pm_id=Pur_prodid                                        
+left outer join Branch_Master on branch_id=Pur_branch                                  
+where (branch_code like @branch or isnull(@branch,'')='')  and convert(varchar,Pur_date,112)>=@fdate and convert(varchar,Pur_date,112)<=@tdate  and                               
+(pm_brand like @type or isnull(@type,'')='')                              
+and (pm_name like @product or isnull(@product,'')='') and pur_acc=@status                             
+group by pm_brand,cus_name,Pur_billno,cus_scode,branch_statecode,cus_name,convert(varchar,Pur_date,104),convert(varchar,Pur_date,112),                  
+pm_type,pm_name,pm_hsncode,Pur_Rate,pm_EmpCom                  
+) as x                                     
+group by Brand,ProductName,HSNCode,[Basic Rate],Weights                 
+order by Brand,ProductName asc                                    
+end 
